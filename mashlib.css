@@ -1,0 +1,21 @@
+/* mashlib.css — LOSOS styles for JSS data browser */
+* { margin: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #fafaf8;
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+}
+#mashlib {
+  min-height: 100vh;
+}
+#pane-tabs {
+  border-bottom-color: #e5e3de !important;
+}
+.pane-tab {
+  color: #888 !important;
+}
+.pane-tab[aria-selected="true"] {
+  color: #1a1a1a !important;
+}
