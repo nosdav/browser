@@ -10,13 +10,24 @@ export default {
   },
 
   render(subject, store, container) {
-    const node = store.get(subject.value)
-    if (!node) return
-
     const dataEl = document.querySelector('script[type="application/ld+json"]')
     const src = dataEl && dataEl.getAttribute('src')
     const dataUrl = src ? new URL(src, window.location.href).href : ''
-    const raw = JSON.stringify(node, null, 2)
+
+    // Show the full document, not just the focused subject. The entry point
+    // caches the parsed JSON-LD on the island as `__jsonLd`; fall back to the
+    // island's text, then to the subject node if there's no island at all.
+    let raw
+    if (dataEl && dataEl.__jsonLd) {
+      raw = JSON.stringify(dataEl.__jsonLd, null, 2)
+    } else if (dataEl && dataEl.textContent) {
+      try { raw = JSON.stringify(JSON.parse(dataEl.textContent), null, 2) }
+      catch { raw = dataEl.textContent }
+    } else {
+      const node = store.get(subject.value)
+      if (!node) return
+      raw = JSON.stringify(node, null, 2)
+    }
     const bytes = new Blob([raw]).size
 
     render(container, html`
