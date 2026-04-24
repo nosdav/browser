@@ -60,11 +60,11 @@ var panes = [
   'panes/webledger-pane.js',
   'panes/playlist-pane.js',
   'panes/markdown-pane.js',
-  'panes/source-pane.js',
+  'panes/todo-pane.js',
   'panes/schema-pane.js',
   'panes/pod-pane.js',
-  'panes/todo-pane.js',
-  'panes/sharing-pane.js'
+  'panes/sharing-pane.js',
+  'panes/source-pane.js'
 ]
 for (var p of panes) {
   var el = document.createElement('script')
