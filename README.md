@@ -1,8 +1,8 @@
 # NosDav Browser
 
-A data browser for [Solid](https://solidproject.org) pods — load a pod URL, see a usable UI.
+A data browser for [NosDav](https://nosdav.com) pods — load a pod URL, see a usable UI.
 
-NosDav Browser turns raw JSON-LD resources on a Solid pod into interactive views: tasks, folders, profiles, playlists, markdown, and more. It runs as a JSS [`--mashlib-module`](https://github.com/jeff-zucker/javascript-solid-server), so every resource on the pod becomes a small app without a build step, a bundler, or a server restart.
+NosDav Browser turns raw JSON-LD resources on a pod into interactive views: tasks, folders, profiles, playlists, markdown, and more. It ships as the default UI for [`nosdav-server`](https://github.com/nosdav/server), so every resource on the pod becomes a small app without a build step, a bundler, or a server restart.
 
 The whole thing is ~1,100 lines of vanilla JavaScript. No dependencies. No framework.
 
@@ -10,19 +10,20 @@ The whole thing is ~1,100 lines of vanilla JavaScript. No dependencies. No frame
 
 ## Try it
 
-Any [JSS](https://github.com/jeff-zucker/javascript-solid-server) pod can load it directly from GitHub Pages:
+```bash
+npm install -g nosdav-server
+nosdav
+```
+
+Open <http://localhost:3000/> and you're running it — `nosdav-server` wires this browser in as its default `--mashlib-module`. Every pod URL you visit is rendered by the pane that matches its `@type`.
+
+To pin a specific build, pass it through explicitly:
 
 ```bash
-jss start --mashlib-module https://nosdav.github.io/browser/mashlib.js
+nosdav --mashlib-module https://nosdav.github.io/browser/mashlib.js
 ```
 
-Or set it permanently in `config.json`:
-
-```json
-{ "mashlibModule": "https://nosdav.github.io/browser/mashlib.js" }
-```
-
-Then visit any resource on your pod — the browser renders the appropriate pane for the data's `@type`.
+The browser also works as a plain [JSS](https://github.com/JavaScriptSolidServer/JavaScriptSolidServer) `--mashlib-module`, so any Solid pod running JSS can load it unchanged.
 
 ---
 
@@ -135,7 +136,7 @@ cd browser
 python3 -m http.server 8000
 ```
 
-Then point a JSS instance at `http://localhost:8000/mashlib.js`, or open `index.html` directly.
+Then point `nosdav-server` (or any JSS instance) at `http://localhost:8000/mashlib.js`, or open `index.html` directly.
 
 The default branch is `gh-pages`, so pushing to it publishes immediately at `https://nosdav.github.io/browser/`.
 
@@ -143,7 +144,7 @@ The default branch is `gh-pages`, so pushing to it publishes immediately at `htt
 
 ## Why
 
-`rdflib.js` + the original `mashlib.js` are ~300 KB and load N-Triples, Turtle, RDF/XML, SPARQL, patches, signing, pub-sub — a lot of surface for showing a to-do list. JSON-LD is now ubiquitous, browsers parse JSON natively, and most Solid apps only need a handful of predicates. So:
+`rdflib.js` + the original `mashlib.js` are ~300 KB and load N-Triples, Turtle, RDF/XML, SPARQL, patches, signing, pub-sub — a lot of surface for showing a to-do list. JSON-LD is now ubiquitous, browsers parse JSON natively, and most pods only need a handful of predicates. So:
 
 - **LION** keeps the rdflib shape so existing panes port cleanly, but reads JSON-LD directly and drops everything else.
 - **LOSOS** keeps panes isolated — any pane can live on any URL, referenced via `ui:view`. Data declares its own view.
