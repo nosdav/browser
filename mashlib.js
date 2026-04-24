@@ -11,6 +11,12 @@
 var base = new URL('.', import.meta.url).href
 var resourceUrl = window.location.href.replace(/[?#].*$/, '')
 
+// Inject the sibling mashlib.css so standalone consumers get default styling
+var cssLink = document.createElement('link')
+cssLink.rel = 'stylesheet'
+cssLink.href = base + 'mashlib.css'
+document.head.appendChild(cssLink)
+
 // Inject xlogin for Solid/Nostr authentication
 var xloginScript = document.createElement('script')
 xloginScript.src = 'https://unpkg.com/xlogin'
