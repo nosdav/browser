@@ -54,6 +54,7 @@ try {
 // Register default panes
 var panes = [
   'panes/home-pane.js',
+  'panes/terminal-pane.js',
   'panes/profile-pane.js',
   'panes/agent-pane.js',
   'panes/folder-pane.js',
