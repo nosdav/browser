@@ -70,6 +70,20 @@ export default {
   },
 
   render(subject, store, container, rawData) {
+    // Anonymous → login empty-state, skip the guaranteed-401 ACL fetch (#8)
+    if (!(window.xlogin && window.xlogin.id)) {
+      container.innerHTML = ''
+      var anon = document.createElement('div')
+      anon.style.cssText = 'max-width:520px;margin:60px auto;padding:40px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;'
+      anon.innerHTML = '<div style="font-size:42px;margin-bottom:12px;">\u{1F91D}</div>'
+        + '<h2 style="font-size:22px;margin:0 0 8px;color:#1a1a1a;">Sharing</h2>'
+        + '<p style="color:#888;margin:0 0 24px;">Log in to manage who can access this resource.</p>'
+        + '<button id="sh-login-btn" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:10px 24px;font:600 14px inherit;cursor:pointer;">Log in</button>'
+      container.appendChild(anon)
+      anon.querySelector('#sh-login-btn').onclick = function() { window.xlogin && window.xlogin.login && window.xlogin.login() }
+      return
+    }
+
     var resourceUrl = window.location.href.replace(/[?#].*$/, '')
     var aclUrl = resourceUrl.endsWith('/') ? resourceUrl + '.acl' : resourceUrl + '.acl'
     var auths = []
