@@ -25,13 +25,19 @@ function readOidcIssuer(store, subjectValue) {
 }
 
 // Validate the issuer URL came from a profile that hasn't been tampered to
-// redirect credentials. Require: same protocol as current page, AND issuer
-// hostname is either the page hostname or a parent of it (e.g. page is
-// melvin.solid.social, issuer is solid.social).
+// redirect credentials. Require: same protocol as current page, same port,
+// AND issuer hostname is either the page hostname or a parent of it (e.g.
+// page is melvin.solid.social, issuer is solid.social).
+//
+// LIMITATION: rejects setups where the WebID points to a shared IDP on an
+// unrelated host. The proper fix is to validate against the issuer xlogin
+// actually authenticated to, but xlogin doesn't expose that today — see
+// melvincarvalho/xlogin#15 for the follow-up.
 function validateIssuer(iss) {
   try {
     var u = new URL(iss)
     if (u.protocol !== window.location.protocol) return false
+    if (u.port !== window.location.port) return false
     var page = window.location.hostname
     var issHost = u.hostname
     return issHost === page || page.endsWith('.' + issHost)
