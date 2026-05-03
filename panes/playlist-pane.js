@@ -28,6 +28,29 @@ function youtubeThumbnail(vid) {
   return 'https://img.youtube.com/vi/' + vid + '/mqdefault.jpg'
 }
 
+// Classify a track URL by what kind of player element should host it.
+// Lookup is by file extension; HLS gets its own bucket because Chrome/
+// Brave/Firefox need hls.js (Safari plays it natively in <video>).
+function mediaKind(url) {
+  if (youtubeId(url)) return 'youtube'
+  var path = url.split(/[?#]/)[0].toLowerCase()
+  if (/\.m3u8?$/.test(path)) return 'hls'
+  if (/\.(mp4|webm|mov|ogv)$/.test(path)) return 'video'
+  if (/\.(mp3|ogg|oga|wav|m4a|aac|flac|opus)$/.test(path)) return 'audio'
+  return null
+}
+
+// Lazy-load hls.js once when a non-Safari browser hits an HLS stream.
+var _hlsReady = null
+function loadHlsOnce() {
+  if (!_hlsReady) {
+    _hlsReady = import('https://esm.sh/hls.js@1.5.13').then(function (mod) {
+      return mod.default || mod.Hls || mod
+    })
+  }
+  return _hlsReady
+}
+
 export default {
   label: 'Playlist',
   icon: '\u{1F3B5}',
@@ -62,7 +85,7 @@ export default {
     function renderPlayer() {
       var track = tracks[current]
       if (!track) return
-      var vid = youtubeId(track.url)
+      var kind = mediaKind(track.url)
 
       var wrapper = document.createElement('div')
       wrapper.style.cssText = 'max-width: 900px; margin: 0 auto; padding: 24px 32px 80px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;'
@@ -71,19 +94,55 @@ export default {
       var nowPlaying = document.createElement('div')
       nowPlaying.style.cssText = 'background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 24px; color: #fff;'
 
-      if (vid && playing) {
+      // Auto-advance on natural end of an audio/video track. Wrapped so
+      // the same handler is shared by all native-media branches below.
+      function autoNext() {
+        if (current < tracks.length - 1) play(current + 1)
+        else { playing = false; renderPlayer() }
+      }
+
+      if (kind === 'youtube' && playing) {
         var iframe = document.createElement('iframe')
-        iframe.src = 'https://www.youtube.com/embed/' + vid + '?autoplay=1&enablejsapi=1'
+        iframe.src = 'https://www.youtube.com/embed/' + youtubeId(track.url) + '?autoplay=1&enablejsapi=1'
         iframe.style.cssText = 'width: 100%; aspect-ratio: 16/9; border: none; border-radius: 8px; margin-bottom: 16px;'
         iframe.allow = 'autoplay; encrypted-media'
         iframe.allowFullscreen = true
         nowPlaying.appendChild(iframe)
-      } else if (vid) {
+      } else if (kind === 'youtube') {
         var thumb = document.createElement('img')
-        thumb.src = youtubeThumbnail(vid)
+        thumb.src = youtubeThumbnail(youtubeId(track.url))
         thumb.style.cssText = 'width: 100%; border-radius: 8px; margin-bottom: 16px; cursor: pointer;'
         thumb.onclick = function() { playing = true; renderPlayer() }
         nowPlaying.appendChild(thumb)
+      } else if (kind === 'video' || kind === 'hls') {
+        var video = document.createElement('video')
+        video.controls = true
+        video.autoplay = playing
+        video.style.cssText = 'width: 100%; aspect-ratio: 16/9; border-radius: 8px; margin-bottom: 16px; background: #000;'
+        video.addEventListener('ended', autoNext)
+        if (kind === 'hls' && !video.canPlayType('application/vnd.apple.mpegurl')) {
+          // Non-Safari browsers need hls.js for HLS playback.
+          loadHlsOnce().then(function (Hls) {
+            if (Hls && Hls.isSupported()) {
+              var hls = new Hls()
+              hls.loadSource(track.url)
+              hls.attachMedia(video)
+            } else {
+              video.src = track.url
+            }
+          })
+        } else {
+          video.src = track.url
+        }
+        nowPlaying.appendChild(video)
+      } else if (kind === 'audio') {
+        var audio = document.createElement('audio')
+        audio.controls = true
+        audio.autoplay = playing
+        audio.src = track.url
+        audio.style.cssText = 'width: 100%; margin-bottom: 16px;'
+        audio.addEventListener('ended', autoNext)
+        nowPlaying.appendChild(audio)
       }
 
       var titleEl = document.createElement('div')
