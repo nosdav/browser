@@ -70,8 +70,10 @@ export default {
   },
 
   render(subject, store, container, rawData) {
-    // Anonymous → login empty-state, skip the guaranteed-401 ACL fetch (#8)
-    if (!(window.xlogin && window.xlogin.id)) {
+    // Anonymous → login empty-state, skip the guaranteed-401 ACL fetch (#8).
+    // Only when xlogin loaded but unauthenticated; if xlogin is missing
+    // entirely, fall through and let the real ACL fetch surface the error.
+    if (window.xlogin && !window.xlogin.id) {
       container.innerHTML = ''
       var anon = document.createElement('div')
       anon.style.cssText = 'max-width:520px;margin:60px auto;padding:40px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;'
