@@ -1,15 +1,41 @@
-import { html, render } from '../losos/html.js'
+import { html, render, ref } from '../losos/html.js'
 
 var SOLID = 'http://www.w3.org/ns/solid/terms#'
 
+function pickIssuer(node) {
+  return node && (node['oidcIssuer'] || node['solid:oidcIssuer'] || node[SOLID + 'oidcIssuer'])
+}
+
 function readOidcIssuer(store, subjectValue) {
-  var node = store.get(subjectValue) || store.get('#me') || store.get('#this')
-  if (!node) return null
-  // @context can map oidcIssuer to any of these key shapes
-  var v = node['oidcIssuer'] || node['solid:oidcIssuer'] || node[SOLID + 'oidcIssuer']
-  if (!v) return null
-  var iss = typeof v === 'object' ? v['@id'] : v
-  return iss && iss.endsWith('/') ? iss : (iss ? iss + '/' : null)
+  var docUri = subjectValue.replace(/#.*$/, '')
+  var candidates = [
+    subjectValue,
+    docUri + '#me', docUri + '#this', docUri + '#i', docUri + '#card', docUri,
+    '#me', '#this', '#i', '#card'
+  ]
+  for (var i = 0; i < candidates.length; i++) {
+    var v = pickIssuer(store.get(candidates[i]))
+    if (v) {
+      var iss = typeof v === 'object' ? v['@id'] : v
+      if (!iss) continue
+      return iss.endsWith('/') ? iss : iss + '/'
+    }
+  }
+  return null
+}
+
+// Validate the issuer URL came from a profile that hasn't been tampered to
+// redirect credentials. Require: same protocol as current page, AND issuer
+// hostname is either the page hostname or a parent of it (e.g. page is
+// melvin.solid.social, issuer is solid.social).
+function validateIssuer(iss) {
+  try {
+    var u = new URL(iss)
+    if (u.protocol !== window.location.protocol) return false
+    var page = window.location.hostname
+    var issHost = u.hostname
+    return issHost === page || page.endsWith('.' + issHost)
+  } catch (e) { return false }
 }
 
 export default {
@@ -31,12 +57,20 @@ export default {
         + '<p>No <code>solid:oidcIssuer</code> found in this profile — cannot resolve the IDP endpoint.</p></div>'
       return
     }
+    if (!validateIssuer(issuer)) {
+      container.innerHTML = '<div style="max-width:520px;margin:60px auto;padding:40px;text-align:center;color:#991b1b;font-family:-apple-system,sans-serif">'
+        + '<h2 style="color:#1a1a1a">\u{1F510} Account</h2>'
+        + '<p><code>solid:oidcIssuer</code> in this profile (<code>' + issuer + '</code>) does not match the current origin. '
+        + 'Refusing to send credentials cross-origin.</p></div>'
+      return
+    }
 
     var doFetch = (window.xlogin && window.xlogin.authFetch) || fetch
     var endpoint = issuer + 'idp/credentials'
     var status = ''  // '' | 'submitting' | 'ok' | 'err'
     var errMsg = ''
     var values = { current: '', next: '', confirm: '' }
+    var refs = { current: ref(), next: ref(), confirm: ref() }
 
     // Preflight: probe the endpoint UNAUTHENTICATED to confirm the dedicated
     // PUT handler exists. The handler's 401 has a specific shape that the LDP
@@ -51,7 +85,14 @@ export default {
       } catch (e) { return false }
     }
 
-    function update(field, ev) { values[field] = ev.target.value; redraw() }
+    function update(field, ev) { values[field] = ev.target.value }
+
+    function clearInputs() {
+      values = { current: '', next: '', confirm: '' }
+      if (refs.current.el) refs.current.el.value = ''
+      if (refs.next.el) refs.next.el.value = ''
+      if (refs.confirm.el) refs.confirm.el.value = ''
+    }
 
     async function submit(ev) {
       ev.preventDefault()
@@ -80,7 +121,7 @@ export default {
         })
         if (res.status === 200) {
           status = 'ok'
-          values = { current: '', next: '', confirm: '' }
+          clearInputs()
         } else if (res.status === 401) {
           status = 'err'; errMsg = 'Current password is incorrect.'
         } else if (res.status === 400) {
@@ -112,31 +153,33 @@ export default {
           <p style="font-size:13px;color:#888;margin:0 0 16px">Re-enter your current password as proof.</p>
 
           <form onsubmit="${submit}">
-            <label style="${label}">Current password</label>
-            <input type="password" autocomplete="current-password" style="${input}"
-                   value="${values.current}" oninput="${(e) => update('current', e)}" disabled="${submitting}" />
+            <label for="acct-current" style="${label}">Current password</label>
+            <input id="acct-current" type="password" autocomplete="current-password" style="${input}"
+                   ref="${refs.current}" oninput="${(e) => update('current', e)}" disabled="${submitting}" />
 
-            <label style="${label}">New password</label>
-            <input type="password" autocomplete="new-password" style="${input}"
-                   value="${values.next}" oninput="${(e) => update('next', e)}" disabled="${submitting}" />
+            <label for="acct-next" style="${label}">New password</label>
+            <input id="acct-next" type="password" autocomplete="new-password" style="${input}"
+                   ref="${refs.next}" oninput="${(e) => update('next', e)}" disabled="${submitting}" />
 
-            <label style="${label}">Confirm new password</label>
-            <input type="password" autocomplete="new-password" style="${input}"
-                   value="${values.confirm}" oninput="${(e) => update('confirm', e)}" disabled="${submitting}" />
+            <label for="acct-confirm" style="${label}">Confirm new password</label>
+            <input id="acct-confirm" type="password" autocomplete="new-password" style="${input}"
+                   ref="${refs.confirm}" oninput="${(e) => update('confirm', e)}" disabled="${submitting}" />
 
             <button type="submit" style="${submitting ? btnDisabled : btn}" disabled="${submitting}">
               ${submitting ? 'Saving...' : 'Update password'}
             </button>
           </form>
 
-          ${status === 'ok' ? html`
-            <div style="margin-top:18px;padding:12px 16px;background:#ecfdf5;color:#065f46;border-radius:8px;font-size:14px">
-              Password updated.
-            </div>` : null}
-          ${status === 'err' ? html`
-            <div style="margin-top:18px;padding:12px 16px;background:#fef2f2;color:#991b1b;border-radius:8px;font-size:14px">
-              ${errMsg}
-            </div>` : null}
+          <div role="status" aria-live="polite" style="min-height:1px">
+            ${status === 'ok' ? html`
+              <div style="margin-top:18px;padding:12px 16px;background:#ecfdf5;color:#065f46;border-radius:8px;font-size:14px">
+                Password updated.
+              </div>` : null}
+            ${status === 'err' ? html`
+              <div style="margin-top:18px;padding:12px 16px;background:#fef2f2;color:#991b1b;border-radius:8px;font-size:14px">
+                ${errMsg}
+              </div>` : null}
+          </div>
         </div>
       `)
     }
