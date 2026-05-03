@@ -85,8 +85,6 @@ for (var p of panes) {
   document.head.appendChild(el)
 }
 
-// Wait for xlogin script to load + finish session restore so panes
-// don't capture an unrestored auth state and 401 on hard reload.
 await xloginLoaded
 if (window.xlogin && window.xlogin.ready) await window.xlogin.ready
 
