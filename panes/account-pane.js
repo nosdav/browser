@@ -72,6 +72,18 @@ export default {
   },
 
   render(subject, store, container, rawData) {
+    // Re-check auth: the tab list is built once at boot, but the user may
+    // have logged out since. Without this guard window.xlogin.id is null
+    // and the pane crashes.
+    if (!(window.xlogin && window.xlogin.id)) {
+      render(container, html`
+        <div style="max-width:520px;margin:60px auto;padding:40px;text-align:center;color:#888;font-family:-apple-system,sans-serif">
+          <h2 style="color:#1a1a1a">${'\u{1F510}'} Account</h2>
+          <p>Log in to manage your account.</p>
+        </div>
+      `)
+      return
+    }
     // Always read from the user's WebID node, not whichever subject the
     // shell picked — robust against #this-vs-#me ambiguity.
     var issuer = readOidcIssuer(store, window.xlogin.id)
