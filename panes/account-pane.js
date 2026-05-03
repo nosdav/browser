@@ -5,7 +5,8 @@ var SOLID = 'http://www.w3.org/ns/solid/terms#'
 function readOidcIssuer(store, subjectValue) {
   var node = store.get(subjectValue) || store.get('#me') || store.get('#this')
   if (!node) return null
-  var v = node['solid:oidcIssuer'] || node[SOLID + 'oidcIssuer']
+  // @context can map oidcIssuer to any of these key shapes
+  var v = node['oidcIssuer'] || node['solid:oidcIssuer'] || node[SOLID + 'oidcIssuer']
   if (!v) return null
   var iss = typeof v === 'object' ? v['@id'] : v
   return iss && iss.endsWith('/') ? iss : (iss ? iss + '/' : null)
@@ -37,6 +38,19 @@ export default {
     var errMsg = ''
     var values = { current: '', next: '', confirm: '' }
 
+    // Preflight: probe the endpoint UNAUTHENTICATED to confirm the dedicated
+    // PUT handler exists. The handler's 401 has a specific shape that the LDP
+    // wildcard fallthrough would not produce. Crucial: unauth PUT with no body
+    // can never leak credentials even if it does fall through.
+    async function preflight() {
+      try {
+        var res = await fetch(endpoint, { method: 'PUT' })
+        if (res.status !== 401) return false
+        var body = await res.json().catch(function() { return null })
+        return !!(body && body.error === 'invalid_token')
+      } catch (e) { return false }
+    }
+
     function update(field, ev) { values[field] = ev.target.value; redraw() }
 
     async function submit(ev) {
@@ -52,6 +66,12 @@ export default {
         status = 'err'; errMsg = 'New password must differ from current.'; return redraw()
       }
       status = 'submitting'; redraw()
+      // Preflight before sending the password — version-skew protection.
+      if (!(await preflight())) {
+        status = 'err'
+        errMsg = 'This server does not support self-service password change. The administrator needs to update JSS to 0.0.165 or later.'
+        return redraw()
+      }
       try {
         var res = await doFetch(endpoint, {
           method: 'PUT',
