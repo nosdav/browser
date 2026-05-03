@@ -64,10 +64,14 @@ export default {
       return
     }
     if (!validateIssuer(issuer)) {
-      container.innerHTML = '<div style="max-width:520px;margin:60px auto;padding:40px;text-align:center;color:#991b1b;font-family:-apple-system,sans-serif">'
-        + '<h2 style="color:#1a1a1a">\u{1F510} Account</h2>'
-        + '<p><code>solid:oidcIssuer</code> in this profile (<code>' + issuer + '</code>) does not match the current origin. '
-        + 'Refusing to send credentials cross-origin.</p></div>'
+      // html`` interpolates ${} as text nodes — safe even if `issuer` was
+      // tampered to contain HTML/script.
+      render(container, html`
+        <div style="max-width:520px;margin:60px auto;padding:40px;text-align:center;color:#991b1b;font-family:-apple-system,sans-serif">
+          <h2 style="color:#1a1a1a">${'\u{1F510}'} Account</h2>
+          <p><code>solid:oidcIssuer</code> in this profile (<code>${issuer}</code>) does not match the current origin. Refusing to send credentials cross-origin.</p>
+        </div>
+      `)
       return
     }
 
