@@ -20,6 +20,10 @@ document.head.appendChild(cssLink)
 // Inject xlogin for Solid/Nostr authentication
 var xloginScript = document.createElement('script')
 xloginScript.src = 'https://unpkg.com/xlogin'
+var xloginLoaded = new Promise(r => {
+  xloginScript.addEventListener('load', r, { once: true })
+  xloginScript.addEventListener('error', r, { once: true })
+})
 document.head.appendChild(xloginScript)
 
 // Fetch the current resource
@@ -80,6 +84,11 @@ for (var p of panes) {
   el.src = base + p
   document.head.appendChild(el)
 }
+
+// Wait for xlogin script to load + finish session restore so panes
+// don't capture an unrestored auth state and 401 on hard reload.
+await xloginLoaded
+if (window.xlogin && window.xlogin.ready) await window.xlogin.ready
 
 // Import shell — auto-boots on detecting <div id="mashlib">
 await import(base + 'losos/shell.js')
