@@ -131,7 +131,7 @@ function renderTabs(panes, container, subject, store, rawData, opts) {
   content.id = 'pane-container'
   content.style.cssText = 'max-width:' + maxWidth + ';margin:0 auto'
 
-  const selectPane = (pane, tab) => {
+  const selectPane = async (pane, tab) => {
     content.innerHTML = ''
     for (const t of tabBar.children) {
       t.setAttribute('aria-selected', 'false')
@@ -141,6 +141,14 @@ function renderTabs(panes, container, subject, store, rawData, opts) {
     tab.setAttribute('aria-selected', 'true')
     tab.style.borderBottomColor = opts.accentColor || '#7c3aed'
     tab.style.color = tabActiveColor
+
+    if (localStorage.getItem('currentAccount')) {
+      if (!window.xlogin) {
+        var s = document.querySelector('script[src*="xlogin"]')
+        if (s) await new Promise(r => { s.addEventListener('load', r, { once: true }); s.addEventListener('error', r, { once: true }) })
+      }
+      if (window.xlogin && window.xlogin.ready) await window.xlogin.ready
+    }
 
     try {
       pane.render(subject, store, content, rawData)
