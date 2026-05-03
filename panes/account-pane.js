@@ -3,7 +3,10 @@ import { html, render, ref } from '../losos/html.js'
 var SOLID = 'http://www.w3.org/ns/solid/terms#'
 
 function pickIssuer(node) {
-  return node && (node['oidcIssuer'] || node['solid:oidcIssuer'] || node[SOLID + 'oidcIssuer'])
+  var v = node && (node['oidcIssuer'] || node['solid:oidcIssuer'] || node[SOLID + 'oidcIssuer'])
+  // JSON-LD allows the value to be an array of references
+  if (Array.isArray(v)) v = v[0]
+  return v
 }
 
 function readOidcIssuer(store, subjectValue) {
@@ -33,11 +36,19 @@ function readOidcIssuer(store, subjectValue) {
 // unrelated host. The proper fix is to validate against the issuer xlogin
 // actually authenticated to, but xlogin doesn't expose that today — see
 // melvincarvalho/xlogin#15 for the follow-up.
+function defaultPortFor(protocol) {
+  return protocol === 'https:' ? '443' : protocol === 'http:' ? '80' : ''
+}
+
+function normalizedPort(u) {
+  return u.port || defaultPortFor(u.protocol)
+}
+
 function validateIssuer(iss) {
   try {
     var u = new URL(iss)
     if (u.protocol !== window.location.protocol) return false
-    if (u.port !== window.location.port) return false
+    if (normalizedPort(u) !== normalizedPort(window.location)) return false
     var page = window.location.hostname
     var issHost = u.hostname
     return issHost === page || page.endsWith('.' + issHost)
