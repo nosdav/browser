@@ -154,6 +154,20 @@ export default {
         name.textContent = t.title
         row.appendChild(name)
 
+        // Open the track's source URL in a new tab. Stop propagation so
+        // clicking the link doesn't also trigger the row's play handler.
+        var openLink = document.createElement('a')
+        openLink.href = t.url
+        openLink.target = '_blank'
+        openLink.rel = 'noopener noreferrer'
+        openLink.title = 'Open source in new tab'
+        openLink.textContent = '↗'
+        openLink.style.cssText = 'margin-left: 8px; padding: 4px 8px; font-size: 16px; color: #888; text-decoration: none; border-radius: 4px;'
+        openLink.onmouseenter = function() { openLink.style.background = '#eee'; openLink.style.color = '#7c3aed' }
+        openLink.onmouseleave = function() { openLink.style.background = 'none'; openLink.style.color = '#888' }
+        openLink.onclick = function(e) { e.stopPropagation() }
+        row.appendChild(openLink)
+
         wrapper.appendChild(row)
       })
 
