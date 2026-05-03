@@ -61,14 +61,20 @@ export default {
 
   canHandle(subject, store) {
     if (!(window.xlogin && window.xlogin.id)) return false
-    // Exact subject match — pane is "your account", not "any node in your
-    // profile doc". A profile that contains both #me and #this would
-    // otherwise show the tab on the wrong node.
-    return subject.value === window.xlogin.id
+    // Same doc as the user's WebID. We don't require subject.value to equal
+    // the WebID, because LOSOS's findSubject() prefers #this over #me on
+    // multi-node profiles — exact match would hide the tab on those docs.
+    // render() always reads the issuer from window.xlogin.id directly, so
+    // the wrong-subject concern is moot.
+    var subjDoc = subject.value.replace(/#.*$/, '')
+    var myDoc = window.xlogin.id.replace(/#.*$/, '')
+    return subjDoc === myDoc
   },
 
   render(subject, store, container, rawData) {
-    var issuer = readOidcIssuer(store, subject.value)
+    // Always read from the user's WebID node, not whichever subject the
+    // shell picked — robust against #this-vs-#me ambiguity.
+    var issuer = readOidcIssuer(store, window.xlogin.id)
     if (!issuer) {
       container.innerHTML = '<div style="max-width:520px;margin:60px auto;padding:40px;text-align:center;color:#888;font-family:-apple-system,sans-serif">'
         + '<h2 style="color:#1a1a1a">\u{1F510} Account</h2>'
