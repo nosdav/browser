@@ -50,9 +50,10 @@ export default {
 
   canHandle(subject, store) {
     if (!(window.xlogin && window.xlogin.id)) return false
-    var subjDoc = subject.value.replace(/#.*$/, '')
-    var myDoc = window.xlogin.id.replace(/#.*$/, '')
-    return subjDoc === myDoc
+    // Exact subject match — pane is "your account", not "any node in your
+    // profile doc". A profile that contains both #me and #this would
+    // otherwise show the tab on the wrong node.
+    return subject.value === window.xlogin.id
   },
 
   render(subject, store, container, rawData) {
@@ -86,6 +87,12 @@ export default {
     // PUT handler exists. The handler's 401 has a specific shape that the LDP
     // wildcard fallthrough would not produce. Crucial: unauth PUT with no body
     // can never leak credentials even if it does fall through.
+    //
+    // RESIDUAL RISK: on a misconfigured JSS <0.0.165 where /idp/credentials
+    // has a world-writable ACL, the wildcard could create an empty file at
+    // that path. WAC normally rejects unauth PUT before the wildcard runs, so
+    // this is theoretical. Proper fix is GET-based discovery on the JSS side
+    // (no PUT touches the path at all) — tracked at nosdav/browser#14.
     async function preflight() {
       try {
         var res = await fetch(endpoint, { method: 'PUT' })
