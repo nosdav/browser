@@ -184,9 +184,9 @@ export default {
       // Header
       var header = document.createElement('div')
       header.style.cssText = 'margin-bottom:24px;'
-      header.innerHTML = '<h2 style="font-size:22px;font-weight:700;color:#1a1a1a;margin:0 0 6px;">\u{1F91D} Sharing</h2>'
-        + '<div style="font-size:13px;color:#999;word-break:break-all;">' + resourceUrl + '</div>'
-      if (statusMsg) header.innerHTML += '<div style="font-size:12px;color:#7c3aed;margin-top:6px;">' + statusMsg + '</div>'
+      header.innerHTML = '<h2 style="font-size:18px;font-weight:700;color:#1a1a1a;margin:0 0 6px;">\u{1F91D} Sharing</h2>'
+        + '<div style="font-size:12px;color:#999;word-break:break-all;">' + resourceUrl + '</div>'
+      if (statusMsg) header.innerHTML += '<div style="font-size:11px;color:#7c3aed;margin-top:6px;">' + statusMsg + '</div>'
       w.appendChild(header)
 
       if (loading) {
@@ -215,8 +215,8 @@ export default {
 
       var pubInfo = document.createElement('div')
       pubInfo.style.cssText = 'flex:1;'
-      pubInfo.innerHTML = '<div style="font-size:14px;font-weight:600;color:#1a1a1a;">Public Access</div>'
-        + '<div style="font-size:12px;color:#888;">Anyone on the web can ' + (pub ? pub.modes.join(', ').toLowerCase() : 'not access') + '</div>'
+      pubInfo.innerHTML = '<div style="font-size:13px;font-weight:600;color:#1a1a1a;">Public Access</div>'
+        + '<div style="font-size:11px;color:#888;">Anyone on the web can ' + (pub ? pub.modes.join(', ').toLowerCase() : 'not access') + '</div>'
 
       var pubToggle = document.createElement('button')
       pubToggle.className = 'sh-toggle ' + (pub ? 'sh-toggle-on' : 'sh-toggle-off')
@@ -229,7 +229,7 @@ export default {
 
       // Individual authorizations
       var label = document.createElement('div')
-      label.style.cssText = 'font-size:12px;font-weight:700;color:#888;letter-spacing:.05em;text-transform:uppercase;padding:20px 0 10px;'
+      label.style.cssText = 'font-size:11px;font-weight:700;color:#888;letter-spacing:.05em;text-transform:uppercase;padding:20px 0 10px;'
       label.textContent = 'Permissions (' + auths.length + ')'
       w.appendChild(label)
 
@@ -245,16 +245,47 @@ export default {
         info.style.cssText = 'flex:1;min-width:0;'
 
         var name = document.createElement('div')
-        name.style.cssText = 'font-size:14px;font-weight:600;color:#1a1a1a;'
+        name.style.cssText = 'font-size:13px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'
+        name.title = agentLabel(auth.agent)
         name.textContent = agentLabel(auth.agent)
         info.appendChild(name)
 
         if (!auth.isClass) {
+          var uriRow = document.createElement('div')
+          uriRow.style.cssText = 'display:flex;align-items:center;gap:4px;min-width:0;'
+
           var uri = document.createElement('div')
-          uri.style.cssText = 'font-size:11px;color:#bbb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'
+          uri.style.cssText = 'font-size:10px;color:#bbb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;cursor:pointer;'
           uri.textContent = auth.agent
-          uri.title = auth.agent
-          info.appendChild(uri)
+          uri.title = 'Click to copy: ' + auth.agent
+
+          var copyBtn = document.createElement('button')
+          copyBtn.style.cssText = 'background:none;border:none;cursor:pointer;color:#bbb;font-size:11px;padding:2px 4px;flex-shrink:0;line-height:1;'
+          copyBtn.textContent = '\u{1F4CB}'
+          copyBtn.title = 'Copy WebID'
+
+          var doCopy = function() {
+            (navigator.clipboard ? navigator.clipboard.writeText(auth.agent) : Promise.reject()).then(function() {
+              copyBtn.textContent = '✓'
+              copyBtn.style.color = '#7c3aed'
+              setTimeout(function() { copyBtn.textContent = '\u{1F4CB}'; copyBtn.style.color = '#bbb' }, 1200)
+            }).catch(function() {
+              var ta = document.createElement('textarea')
+              ta.value = auth.agent
+              ta.style.position = 'fixed'; ta.style.opacity = '0'
+              document.body.appendChild(ta); ta.select()
+              try { document.execCommand('copy') } catch (e) {}
+              document.body.removeChild(ta)
+              copyBtn.textContent = '✓'; copyBtn.style.color = '#7c3aed'
+              setTimeout(function() { copyBtn.textContent = '\u{1F4CB}'; copyBtn.style.color = '#bbb' }, 1200)
+            })
+          }
+          uri.onclick = doCopy
+          copyBtn.onclick = doCopy
+
+          uriRow.appendChild(uri)
+          uriRow.appendChild(copyBtn)
+          info.appendChild(uriRow)
         }
 
         // Mode toggles
@@ -295,12 +326,12 @@ export default {
       var input = document.createElement('input')
       input.type = 'text'
       input.placeholder = 'Add WebID (https://...)'
-      input.style.cssText = 'flex:1;padding:8px 14px;border:1px solid #ddd;border-radius:8px;font:14px inherit;outline:none;'
+      input.style.cssText = 'flex:1;padding:7px 12px;border:1px solid #ddd;border-radius:8px;font:13px inherit;outline:none;'
       input.onfocus = function() { input.style.borderColor = '#7c3aed' }
       input.onblur = function() { input.style.borderColor = '#ddd' }
       input.onkeydown = function(e) { if (e.key === 'Enter' && input.value.trim()) { addAgent(input.value.trim()); input.value = '' } }
       var addBtn = document.createElement('button')
-      addBtn.style.cssText = 'background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 18px;font:600 13px inherit;cursor:pointer;'
+      addBtn.style.cssText = 'background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:7px 16px;font:600 12px inherit;cursor:pointer;'
       addBtn.textContent = 'Add'
       addBtn.onclick = function() { if (input.value.trim()) { addAgent(input.value.trim()); input.value = '' } }
       addSection.appendChild(input)
