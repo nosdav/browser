@@ -31,14 +31,14 @@ export default {
     const bytes = new Blob([raw]).size
 
     render(container, html`
-      <div style="padding: 48px 40px 80px; font-family: Inter, -apple-system, sans-serif; max-width: 640px; margin: 0 auto;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-          <h2 style="font-family: Georgia, serif; font-size: 36px; font-weight: 400; font-style: italic; color: #1a1a1a; margin: 0;">Source</h2>
-          <a href="${dataUrl}" target="_blank" rel="noopener"
-             style="font-size: 12px; color: #999; text-decoration: none; font-family: monospace;">${src}</a>
+      <div style="padding: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1400px; margin: 0 auto;">
+        <div style="margin-bottom: 16px;">
+          <h2 style="font-size: 18px; font-weight: 700; color: #1a1a1a; margin: 0 0 6px;">\u{1F4CB} Source</h2>
+          <div style="font-size: 12px; color: #999;">
+            ${src ? html`<a href="${dataUrl}" target="_blank" rel="noopener" style="color: #999; text-decoration: none; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; word-break: break-all;">${src}</a> · ` : ''}${bytes.toLocaleString()} bytes · ${raw.split('\n').length} lines
+          </div>
         </div>
-        <pre style="background: #1a1a1a; color: #e0e0e0; padding: 24px; border-radius: 10px; overflow-x: auto; font-family: monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;">${raw}</pre>
-        <div style="margin-top: 8px; font-size: 11px; color: #ccc; text-align: right;">${bytes.toLocaleString()} bytes · ${raw.split('\n').length} lines</div>
+        <pre style="background: #fff; color: #1a1a1a; padding: 14px; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; margin: 0;">${raw}</pre>
       </div>
     `)
   }
