@@ -56,6 +56,7 @@ try {
   dataScript.type = 'application/ld+json'
   dataScript.__jsonLd = data
   dataScript.textContent = JSON.stringify(data)
+  dataScript.setAttribute('src', resourceUrl)
   document.head.appendChild(dataScript)
 } catch (err) {
   console.warn('[losos] Failed to fetch resource:', resourceUrl, err)
