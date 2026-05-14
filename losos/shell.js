@@ -28,12 +28,13 @@ async function loadPanes() {
 /** Parse JSON-LD data islands into a store, return { store, rawData } */
 async function loadData() {
   var rawData = null
+  var doFetch = (window.xlogin && window.xlogin.authFetch) || fetch
   var uriParam = new URLSearchParams(window.location.search).get('uri')
 
   // If ?uri= is provided, fetch that document
   if (uriParam) {
     try {
-      var res = await fetch(uriParam.replace(/#.*$/, ''), { headers: { 'Accept': 'application/ld+json' } })
+      var res = await doFetch(uriParam.replace(/#.*$/, ''), { headers: { 'Accept': 'application/ld+json' } })
       var parsed = await res.json()
       rawData = parsed
       var dataEl = document.querySelector('script[type="application/ld+json"]')
@@ -45,7 +46,7 @@ async function loadData() {
 
   for (const el of document.querySelectorAll('script[type="application/ld+json"][src]')) {
     try {
-      const res = await fetch(el.src + '?t=' + Date.now(), { cache: 'no-store' })
+      const res = await doFetch(el.src + '?t=' + Date.now(), { cache: 'no-store' })
       const text = await res.text()
       el.__jsonLd = JSON.parse(text)
       el.textContent = text
