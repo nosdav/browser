@@ -38,12 +38,18 @@ try {
   var playlistTypes = ['audio/mpegurl', 'application/vnd.apple.mpegurl', 'audio/x-scpls']
   var isPlaylist = playlistTypes.indexOf(contentType) !== -1 || resourceUrl.match(/\.(m3u8?|pls)$/)
 
+  var audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'audio/aac', 'audio/flac', 'audio/opus', 'audio/webm']
+  var isAudio = audioTypes.indexOf(contentType) !== -1 || resourceUrl.match(/\.(mp3|ogg|oga|wav|m4a|aac|flac|opus)$/)
+
   if (!res.ok && (resourceUrl.endsWith('.md') || resourceUrl.endsWith('.txt'))) {
     // 404 — offer to create the file
     data = { '@id': resourceUrl, '@type': 'TextDocument', 'content': '', 'contentType': 'text/markdown', 'resourceUrl': resourceUrl, 'isNew': true }
   } else if (isPlaylist) {
     var text = await res.text()
     data = { '@id': resourceUrl, '@type': 'Playlist', 'content': text, 'contentType': contentType, 'resourceUrl': resourceUrl }
+  } else if (isAudio) {
+    // Don't read the (binary, possibly large) body — the audio element fetches it itself.
+    data = { '@id': resourceUrl, '@type': 'AudioDocument', 'contentType': contentType || 'audio/mpeg', 'resourceUrl': resourceUrl }
   } else if (contentType === 'text/markdown' || contentType === 'text/plain' || resourceUrl.endsWith('.md')) {
     var text = await res.text()
     data = { '@id': resourceUrl, '@type': 'TextDocument', 'content': text, 'contentType': contentType, 'resourceUrl': resourceUrl }
@@ -72,6 +78,7 @@ var panes = [
   'panes/folder-pane.js',
   'panes/webledger-pane.js',
   'panes/playlist-pane.js',
+  'panes/audio-pane.js',
   'panes/markdown-pane.js',
   'panes/todo-pane.js',
   'panes/schema-pane.js',
